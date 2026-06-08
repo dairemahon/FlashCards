@@ -1,10 +1,12 @@
 from django.http import HttpResponse
+from django.shortcuts import render
+
+
+
+
 
 def index(request):
-        return HttpResponse("Hello World. You're at the polls index.")
-
-def add(request):
-        response = "You're looking at the Add page %s."
+        return HttpResponse("You're looking at the Add page.")
 
 def account(request):
-        response = "You're looking at the account page"
+        return HttpResponse("You're looking at the account page.")

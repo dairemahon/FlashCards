@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import FlashCardFront
+from .models import Deck, Card
 
-admin.site.register(FlashCardFront)
+admin.site.register(Deck)
+admin.site.register(Card)
 # Register your models here.
