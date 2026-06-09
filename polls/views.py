@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect, render
-
+from django.contrib.auth.decorators import login_required
 
 def signup(request):
         if request.method == "POST":
@@ -14,7 +14,7 @@ def signup(request):
         return render(request, "registration/signup.html", {"form": form})
 
 
-
+@login_required
 def index(request):
         return HttpResponse("You're looking at the index page.")
 
