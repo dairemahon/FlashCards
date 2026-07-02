@@ -33,6 +33,7 @@ export default function DeckList({ setIsLoggedIn }) {
   return (
     <div>
       <button onClick={handleLogout}>Logout</button>
+      <button onClick={() => navigate("/decks/create")}>Create New Deck</button>
       <h1>My Decks</h1>
       {loading ? (
         <p>Loading decks...</p>

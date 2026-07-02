@@ -23,6 +23,7 @@ export default function DeckCreate() {
 
   return (
     <div>
+      <button onClick={() => navigate("/decks")}>Back to Decks</button>
       <h1>Create a new deck</h1>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
       <form onSubmit={handleSubmit}>
