@@ -90,7 +90,6 @@ export async function login(username, password) {
 }
 
 
-
 export async function logout() {
   const csrfData = await getCsrfToken();
 
@@ -119,11 +118,6 @@ export async function logout() {
 
   return data;
 }
-
-
-
-
-
 
 
 
@@ -173,4 +167,96 @@ export async function createDeck(title, description) {
   }
 
   return data;
+}
+
+
+export async function createCard(deckId, frontText, backText) {
+    const csrfData = await getCsrfToken();
+
+    const response = await fetch(`${API_BASE}/decks/${deckId}/cards/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfData.csrfToken || "",
+        },
+        body: JSON.stringify({ front_text: frontText, back_text: backText }),
+    });
+
+    const text = await response.text();
+    let data = {};
+    if (text) {
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = { error: text };
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(data.error || "Failed to create card");
+    }
+
+    return data;
+}
+
+
+export async function updateCard(cardId, frontText, backText) {
+    const csrfData = await getCsrfToken();
+    
+    const response = await fetch(`${API_BASE}/cards/${cardId}/`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfData.csrfToken || "",
+        },
+        body: JSON.stringify({ front_text: frontText, back_text: backText }),
+    });
+
+    const text = await response.text();
+    let data = {};
+    if (text) {
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = { error: text };
+        }
+    }
+    
+    if (!response.ok) {
+        throw new Error(data.error || "Failed to update card");
+    }
+
+    return data;
+}
+
+
+export async function deleteCard(cardId) {
+    const csrfData = await getCsrfToken();
+    
+    const response = await fetch(`${API_BASE}/cards/${cardId}/`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfData.csrfToken || "",
+        },
+    });
+    
+    const text = await response.text();
+    let data = {};
+    if (text) {
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = { error: text };
+        }
+    }
+    
+    if (!response.ok) {
+        throw new Error(data.error || "Failed to delete card");
+    }
+    
+    return data;
 }

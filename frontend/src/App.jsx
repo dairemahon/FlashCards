@@ -6,6 +6,7 @@ import Signup from "./components/Signup";
 import DeckList from "./components/DeckList";
 import DeckDetail from "./components/DeckDetail";
 import DeckCreate from "./components/DeckCreate";
+import DeckEditor from "./components/DeckEditor";
 
 
 function App() {
@@ -35,13 +36,13 @@ function App() {
     <Router>
       <Routes>
         <Route
-  path="/login"
-  element={isLoggedIn ? <Navigate replace to="/decks" /> : <Login setIsLoggedIn={setIsLoggedIn} />}
-/>
-<Route
-  path="/signup"
-  element={isLoggedIn ? <Navigate replace to="/decks" /> : <Signup setIsLoggedIn={setIsLoggedIn} />}
-/>
+          path="/login"
+          element={isLoggedIn ? <Navigate replace to="/decks" /> : <Login setIsLoggedIn={setIsLoggedIn} />}
+        />
+        <Route
+          path="/signup"
+          element={isLoggedIn ? <Navigate replace to="/decks" /> : <Signup setIsLoggedIn={setIsLoggedIn} />}
+        />
         <Route
           path="/decks"
           element={isLoggedIn ? <DeckList setIsLoggedIn={setIsLoggedIn} /> : <Navigate replace to="/login" />}
@@ -53,6 +54,10 @@ function App() {
         <Route
           path="/decks/:id"
           element={isLoggedIn ? <DeckDetail /> : <Navigate replace to="/login" />}
+        />
+        <Route 
+          path="/decks/:id/edit" 
+          element={<DeckEditor />} 
         />
 
       </Routes>

@@ -9,7 +9,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods 
-from .models import Deck
+from .models import Deck, Card
 from .forms import DeckForm
 
 @require_http_methods(["GET"])
