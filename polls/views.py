@@ -106,13 +106,25 @@ def api_deck_list(request):
 @login_required
 @require_http_methods(["GET"])
 def api_deck_detail(request, deck_id):
-        """Return a single decks as JSON."""
+        """Return a single deck as JSON."""
         deck = get_object_or_404(Deck, id=deck_id, owner=request.user)
+        cards = deck.cards.all()
+        cards_data = []
+
+        for card in cards:
+                cards_data.append({
+                        "id": card.id,
+                        "front_text": card.front_text,
+                        "back_text": card.back_text,
+                        "created_at": card.created_at.isoformat()
+        })
+        
         data = {
                 "id": deck.id,
                 "title": deck.title,
                 "description": deck.description,
-                "created_at": deck.created_at.isoformat()
+                "created_at": deck.created_at.isoformat(),
+                "cards": cards_data
         }
         return JsonResponse(data)
 
@@ -135,7 +147,68 @@ def api_deck_create(request):
                 return JsonResponse({"error": str(e)}, status=400)
 
 
+@login_required
+@require_http_methods(["POST"])
+def api_create_card(request, deck_id):
+        """Create a new card in a deck"""
+        try:
+                deck = get_object_or_404(Deck, id=deck_id, owner=request.user)
+                data = json.loads(request.body)
 
+                card = Card.objects.create(
+                        deck=deck,
+                        front_text=data.get("front_text", ""),
+                        back_text=data.get("back_text", "")
+                )
+                return JsonResponse({
+                        "id": card.id,
+                        "front_text": card.front_text,
+                        "back_text": card.back_text,
+                        "created_at": card.created_at.isoformat()
+                }, status=201)
+        
+        except json.JSONDecodeError:
+                return JsonResponse({"error": "Invalid JSON"}, status=400)
+        except Exception as e:
+                return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["PUT"])
+def api_update_card(request, card_id):
+        """Update and existing card"""
+        try:
+                card = get_object_or_404(Card, id=card_id, deck__owner=request.user)
+                data = json.loads(request.body)
+
+                card.front_text = data.get("front_text", card.front_text)
+                card.back_text = data.get("back_text", card.back_text)
+                card.save()
+
+                return JsonResponse({
+                        "id": card.id,
+                        "front_text": card.front_text,
+                        "back_text": card.back_text,
+                        "created_at": card.created_at.isoformat()
+                })
+        
+        except json.JSONDecodeError:
+                return JsonResponse({"error": "Invalid JSON"}, status=400)
+        except Exception as e:
+                return JsonResponse({"error": str(e)}, status=400)
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_delete_card(request, card_id):
+        """Delete an existing card"""
+        try:
+                card = get_object_or_404(Card, id=card_id, deck__owner=request.user)
+                card.delete()
+                return JsonResponse({"success": True})
+        
+        except Exception as e:
+                return JsonResponse({"error": str(e)}, status=400)
+        
 
 def index(request):
         return HttpResponse("You're looking at the index page.")
