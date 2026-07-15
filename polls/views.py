@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods 
 from .models import Deck, Card
 from .forms import DeckForm
+from fsrs import Scheduler, Card as FSRSCard, Rating, State
+from datetime import datetime, timezone as dt_timezone
 
 @require_http_methods(["GET"])
 def get_csrf_token(request):
@@ -116,7 +118,9 @@ def api_deck_detail(request, deck_id):
                         "id": card.id,
                         "front_text": card.front_text,
                         "back_text": card.back_text,
-                        "created_at": card.created_at.isoformat()
+                        "created_at": card.created_at.isoformat(),
+                        "due": card.due.isoformat(),
+                        "state": card.state,
         })
         
         data = {
@@ -145,7 +149,18 @@ def api_deck_create(request):
                 return JsonResponse({"error": "Invalid JSON"}, status=400)
         except Exception as e:
                 return JsonResponse({"error": str(e)}, status=400)
-
+        
+@login_required
+@require_http_methods(["DELETE"])
+def api_delete_deck(request, deck_id):
+        """Delete a deck"""
+        try:
+                deck = get_object_or_404(Deck, id=deck_id, owner=request.user)
+                deck.delete()
+                return JsonResponse({"success": True})
+        
+        except Exception as e:
+                return JsonResponse({"error": str(e)}, status=400)
 
 @login_required
 @require_http_methods(["POST"])
@@ -174,10 +189,14 @@ def api_create_card(request, deck_id):
 
 
 @login_required
-@require_http_methods(["PUT"])
+@require_http_methods(["PUT", "DELETE"])
 def api_update_card(request, card_id):
         """Update and existing card"""
         try:
+                if request.method == "DELETE":
+                      card = get_object_or_404(Card, id=card_id, deck__owner=request.user)
+                      card.delete()
+                      return JsonResponse({"success": True})
                 card = get_object_or_404(Card, id=card_id, deck__owner=request.user)
                 data = json.loads(request.body)
 
@@ -196,6 +215,54 @@ def api_update_card(request, card_id):
                 return JsonResponse({"error": "Invalid JSON"}, status=400)
         except Exception as e:
                 return JsonResponse({"error": str(e)}, status=400)
+
+@login_required
+@require_http_methods(["POST"])
+def api_review_card(request, card_id):
+    """Record a review rating and update the card's FSRS schedule"""
+    try:
+        card = get_object_or_404(Card, id=card_id, deck__owner=request.user)
+        data = json.loads(request.body)
+        rating_value = data.get("rating")
+
+        if rating_value not in [1, 2, 3, 4]:
+            return JsonResponse({"error": "Rating must be 1 (Again), 2 (Hard), 3 (Good), or 4 (Easy)"}, status=400)
+
+        # Reconstruct an FSRS card object from the values stored in the database
+        fsrs_card = FSRSCard()
+        fsrs_card.due            = card.due
+        fsrs_card.stability      = card.stability if card.stability else None
+        fsrs_card.difficulty     = card.difficulty if card.difficulty else None
+        fsrs_card.step           = card.step
+        fsrs_card.state          = State(card.state) if card.state in (1, 2, 3) else State.Learning
+        fsrs_card.last_review    = card.last_review
+
+        # Run the FSRS algorithm — this is the core calculation
+        f = Scheduler()
+        now = datetime.now(dt_timezone.utc)
+        fsrs_card, _ = f.review_card(fsrs_card, Rating(rating_value), now)
+
+        # Write the updated values back to the database
+        card.due            = fsrs_card.due
+        card.stability      = fsrs_card.stability
+        card.difficulty     = fsrs_card.difficulty
+        card.step           = fsrs_card.step if fsrs_card.step is not None else 0
+        card.state          = fsrs_card.state.value    # convert enum back to int for storage
+        card.last_review    = now
+        card.save()
+
+        return JsonResponse({
+            "id": card.id,
+            "due": card.due.isoformat(),
+            "state": card.state,
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
 
 @login_required
 @require_http_methods(["DELETE"])

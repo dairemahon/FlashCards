@@ -170,6 +170,33 @@ export async function createDeck(title, description) {
 }
 
 
+export async function deleteDeck(deckId) {
+    const csrfData = await getCsrfToken();
+
+    const response = await fetch(`${API_BASE}/decks/${deckId}/delete/`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "X-CSRFToken": csrfData.csrfToken || "",
+        },
+    });
+
+    const text = await response.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);}
+      catch {data = { error: text };}
+    }
+
+    if (!response.ok) {
+        throw new Error(data.error || "Failed to delete deck");
+    }
+
+    return data;
+}
+
+
 export async function createCard(deckId, frontText, backText) {
     const csrfData = await getCsrfToken();
 
@@ -258,5 +285,32 @@ export async function deleteCard(cardId) {
         throw new Error(data.error || "Failed to delete card");
     }
     
+    return data;
+}
+
+export async function reviewCard(cardId, rating) {
+    const csrfData = await getCsrfToken();
+
+    const response = await fetch(`${API_BASE}/cards/${cardId}/review/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfData.csrfToken || "",
+        },
+        body: JSON.stringify({ rating }),
+    });
+
+    const text = await response.text();
+    let data = {};
+    if (text) {
+        try { data = JSON.parse(text); }
+        catch { data = { error: text }; }
+    }
+
+    if (!response.ok) {
+        throw new Error(data.error || "Failed to record review");
+    }
+
     return data;
 }

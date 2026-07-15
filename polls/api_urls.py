@@ -10,8 +10,9 @@ urlpatterns = [
     path("decks/", views.api_deck_list, name="api_deck_list"),
     path("decks/<int:deck_id>/", views.api_deck_detail, name="api_deck_detail"),
     path("decks/create/", views.api_deck_create, name="api_deck_create"),
+    path("decks/<int:deck_id>/delete/", views.api_delete_deck, name="api_deck_delete"),
     path("csrf-token/", views.get_csrf_token, name="get_csrf_token"),
     path("decks/<int:deck_id>/cards/", views.api_create_card, name="api_create_card"),
     path("cards/<int:card_id>/", views.api_update_card, name="api_update_card"),
-    path("cards/<int:card_id>/", views.api_delete_card, name="api_delete_card")
+    path("cards/<int:card_id>/review/", views.api_review_card, name="api_review_card"),
 ]

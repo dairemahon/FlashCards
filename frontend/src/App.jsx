@@ -7,6 +7,7 @@ import DeckList from "./components/DeckList";
 import DeckDetail from "./components/DeckDetail";
 import DeckCreate from "./components/DeckCreate";
 import DeckEditor from "./components/DeckEditor";
+import Navbar from "./components/Navbar";
 
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
   }
   return (
     <Router>
+      <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
       <Routes>
         <Route
           path="/login"
