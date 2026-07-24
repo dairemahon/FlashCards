@@ -91,7 +91,7 @@ export default function DeckList({ setIsLoggedIn }) {
             <div
               key={deck.id}
               onClick={() => editMode ? toggleSelect(deck.id) : navigate(`/decks/${deck.id}`)}
-              className={`bg-white rounded-xl shadow-sm p-8 cursor-pointer hover:shadow-md transition-shadow 
+              className={`bg-white rounded-sm shadow-sm p-8 cursor-pointer hover:shadow-md transition-shadow 
                   border min-h-60 flex flex-col items-center justify-center pb-15
                   ${editMode && selectedIds.includes(deck.id) ? "border-red-400 bg-red-50" : "border-gray-100"}`}
             >
@@ -114,7 +114,7 @@ export default function DeckList({ setIsLoggedIn }) {
           {/* New Deck card — styled to match the other cards */}
           <div
             onClick={() => navigate("/decks/create")}
-            className="bg-white rounded-xl shadow-sm p-8 cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-indigo-300 min-h-60 flex flex-col items-center justify-center text-indigo-400 hover:text-indigo-600 hover:border-indigo-500 transition-colors"
+            className="bg-white rounded-sm shadow-sm p-8 cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-indigo-300 min-h-60 flex flex-col items-center justify-center text-indigo-400 hover:text-indigo-600 hover:border-indigo-500 transition-colors"
           >
             <span className="text-5xl font-light mb-3">+</span>
             <span className="text-sm font-medium">New Deck</span>

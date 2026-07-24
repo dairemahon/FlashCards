@@ -1,8 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { logout } from "../api";
 
 export default function Navbar({ isLoggedIn, setIsLoggedIn }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -25,12 +26,22 @@ export default function Navbar({ isLoggedIn, setIsLoggedIn }) {
 
       <div className="flex gap-3 px-10">
         {isLoggedIn ? (
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-500 hover:text-red-500 transition-colors"
-          >
-            Logout
-          </button>
+          <>
+            {location.pathname !== "/decks" && (
+              <button
+                onClick={() => navigate("/decks")}
+                className="text-sm text-gray-500 hover:text-indigo-600 transition-colors"
+              >
+                My Decks
+              </button>
+            )}
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+            >
+              Logout
+            </button>
+          </>
         ) : (
           <>
             <button

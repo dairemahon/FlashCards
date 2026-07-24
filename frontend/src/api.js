@@ -288,6 +288,26 @@ export async function deleteCard(cardId) {
     return data;
 }
 
+export async function previewCard(cardId) {
+    const response = await fetch(`${API_BASE}/cards/${cardId}/preview/`, {
+          credentials: "include",
+      });
+
+      const text = await response.text();
+      let data = {};
+      if (text) {
+          try { data = JSON.parse(text); }
+          catch { data = { error: text }; }
+      }
+
+      if (!response.ok) throw new Error(data.error || "Failed to preview card");
+      return data;
+  }
+
+
+
+
+
 export async function reviewCard(cardId, rating) {
     const csrfData = await getCsrfToken();
 

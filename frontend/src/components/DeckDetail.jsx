@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getDeck, createCard, updateCard, deleteCard, deleteDeck, reviewCard } from "../api";
+import { getDeck, createCard, updateCard, deleteCard, deleteDeck, previewCard, reviewCard } from "../api";
 
 
 export default function DeckDetail() {
@@ -31,6 +31,39 @@ export default function DeckDetail() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [maxIndex, setMaxIndex] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
+  const [previews, setPreviews] = useState({}); // Store previews for cards
+
+/*rounding of due time fo card*/
+function formatDue(isoString) {
+  const due = new Date(isoString);
+    const now = new Date();
+    const diffMs = due - now;
+    const diffMins = diffMs / 1000 / 60;
+    const diffHours = diffMins / 60;
+    const diffDays = diffHours / 24;
+
+    if (diffMins < 5) {
+        // Round to nearest minute
+        const mins = Math.round(diffMins);
+        return `${mins}m`;
+    } else if (diffMins < 60) {
+        // Round to nearest 10 minutes
+        const mins = Math.round(diffMins / 10) * 10;
+        return `${mins}m`;
+    } else if (diffHours < 24) {
+        // Round to nearest hour
+        const hours = Math.round(diffHours);
+        return `${hours}h`;
+    } else if (diffDays < 7) {
+        // Round to nearest day
+        const days = Math.round(diffDays);
+        return `${days}d`;
+    } else {
+        // Round to nearest week
+        const weeks = Math.round(diffDays / 7);
+        return `${weeks}w`;
+    }
+}
 
 
 
@@ -60,6 +93,24 @@ export default function DeckDetail() {
     setMaxIndex(0)
     setSessionDone(due.length === 0);
   },[deck]);
+
+
+  /*fetches preview for a card and stores it in the previews state */
+  useEffect(() => {
+    if (dueCards.length === 0 || sessionDone) return;
+    const card = dueCards[questionIndex];
+    previewCard(card.id)
+        .then(data => {
+            const formatted = {};
+            for (const [rating, isoDate] of Object.entries(data.previews)) {
+                formatted[rating] = formatDue(isoDate);
+            }
+            setPreviews(formatted);
+        })
+        .catch(() => setPreviews({}));
+  }, [questionIndex, dueCards, sessionDone]);
+
+
 
   const handleRate = async (rating) => {
     const card = dueCards[questionIndex];
@@ -155,7 +206,44 @@ export default function DeckDetail() {
     } catch (err) {
         setError(err.message);
     }
-};
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+        // Don't fire shortcuts if the user is typing in an input or textarea
+        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+        if (sessionDone || dueCards.length === 0) return; // no shortcuts when session is over
+
+        // Space — flip the card
+        if (e.key === " ") {
+            e.preventDefault(); // stops the page scrolling down
+            setShowBack(prev => !prev);
+        }
+
+        // Rating — 1/2/3/4 keys, only when the back is visible
+        if (showBack) {
+            if (e.key === "1") handleRate(1);
+            if (e.key === "2") handleRate(2);
+            if (e.key === "3") handleRate(3);
+            if (e.key === "4") handleRate(4);
+        }
+
+        // Arrow keys — previous / next navigation
+        if (e.key === "ArrowLeft" && questionIndex > 0) {
+            setQuestionIndex(prev => prev - 1);
+            setShowBack(false);
+        }
+        if (e.key === "ArrowRight" && questionIndex < maxIndex) {
+            setQuestionIndex(prev => prev + 1);
+            setShowBack(false);
+        }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+}, [showBack, sessionDone, dueCards, questionIndex, maxIndex]);
+
 
   if (loading) return <p className="text-center mt-20 text-gray-400">Loading deck...</p>;
   if (error) return <p className="text-center mt-20 text-red-500">Error: {error}</p>;
@@ -173,23 +261,23 @@ export default function DeckDetail() {
           <div>
             <h1 className="text-3xl font-bold text-gray-800">{deck.title}</h1>
             {deck.description && (
-              <p className="text-gray-500 mt-1">{deck.description}</p>
+              <p className="text-gray-700 mt-1">{deck.description}</p>
             )}
             <p className="text-sm text-gray-400 mt-1">
               Created: {new Date(deck.created_at).toLocaleDateString()}
             </p>
+            <button
+            className="text-gray-500  hover:text-red-600 transition-colors text-sm font-medium"
+            onClick={handleDeleteDeck}
+            >
+              Delete Deck
+            </button>
           </div>
           <button
             className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
             onClick={() => navigate(`/decks/${id}/edit`)}
           >
             Edit Deck
-          </button>
-          <button
-            className="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-            onClick={handleDeleteDeck}
-          >
-            Delete Deck
           </button>
         </div>
 
@@ -216,7 +304,7 @@ export default function DeckDetail() {
                 {/* Flashcard */}
                 <div
                     onClick={() => setShowBack(prev => !prev)}
-                    className="bg-white rounded-xl shadow-md border border-gray-100 cursor-pointer flex flex-col items-center justify-center min-h-96 p-12 mb-6 hover:shadow-lg transition-shadow"
+                    className="bg-white rounded-sm shadow-md border border-gray-100 cursor-pointer flex flex-col items-center justify-center min-h-96 p-12 mb-6 hover:shadow-lg transition-shadow"
                 >
                     <p className="text-xs uppercase tracking-widest text-gray-400 mb-6">
                         {showBack ? "Back" : "Front"} — click to flip
@@ -260,11 +348,23 @@ export default function DeckDetail() {
                 {/* Rating buttons — only visible after flipping */}
                 {showBack && (
                     <div className="flex justify-center gap-3">
-                        <button onClick={() => handleRate(1)} className="px-5 py-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 text-sm font-medium transition-colors">Again</button>
-                        <button onClick={() => handleRate(2)} className="px-5 py-2 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-200 text-sm font-medium transition-colors">Hard</button>
-                        <button onClick={() => handleRate(3)} className="px-5 py-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 text-sm font-medium transition-colors">Good</button>
-                        <button onClick={() => handleRate(4)} className="px-5 py-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-medium transition-colors">Easy</button>
-                    </div>
+                      <div className="flex flex-col items-center">
+                          <button onClick={() => handleRate(1)} className="px-5 py-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 text-sm font-medium transition-colors">Again</button>
+                          <span className="text-xs text-gray-400 mt-1">{previews[1] ?? ""}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                          <button onClick={() => handleRate(2)} className="px-5 py-2 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-200 text-sm font-medium transition-colors">Hard</button>
+                          <span className="text-xs text-gray-400 mt-1">{previews[2] ?? ""}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                          <button onClick={() => handleRate(3)} className="px-5 py-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 text-sm font-medium transition-colors">Good</button>
+                          <span className="text-xs text-gray-400 mt-1">{previews[3] ?? ""}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                          <button onClick={() => handleRate(4)} className="px-5 py-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-medium transition-colors">Easy</button>
+                          <span className="text-xs text-gray-400 mt-1">{previews[4] ?? ""}</span>
+                      </div>
+                  </div>
                 )}
             </>
         )}

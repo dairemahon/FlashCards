@@ -14,5 +14,6 @@ urlpatterns = [
     path("csrf-token/", views.get_csrf_token, name="get_csrf_token"),
     path("decks/<int:deck_id>/cards/", views.api_create_card, name="api_create_card"),
     path("cards/<int:card_id>/", views.api_update_card, name="api_update_card"),
+    path("cards/<int:card_id>/preview/", views.api_preview_card, name="api_preview_card"),
     path("cards/<int:card_id>/review/", views.api_review_card, name="api_review_card"),
 ]

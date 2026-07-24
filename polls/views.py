@@ -217,6 +217,34 @@ def api_update_card(request, card_id):
                 return JsonResponse({"error": str(e)}, status=400)
 
 @login_required
+@require_http_methods(["GET"])
+def api_preview_card(request, card_id):
+    """Return what the next due date would be for each rating, without saving"""
+    try:
+        card = get_object_or_404(Card, id=card_id, deck__owner=request.user)
+        now = datetime.now(dt_timezone.utc)
+        f = Scheduler()
+        previews = {}
+
+        for rating_value in [1, 2, 3, 4]:
+            fsrs_card = FSRSCard()
+            fsrs_card.due        = card.due
+            fsrs_card.stability  = card.stability if card.stability else None
+            fsrs_card.difficulty = card.difficulty if card.difficulty else None
+            fsrs_card.step       = card.step
+            fsrs_card.state      = State(card.state) if card.state in (1, 2, 3) else State.Learning
+            fsrs_card.last_review = card.last_review
+
+            updated, _ = f.review_card(fsrs_card, Rating(rating_value), now)
+            previews[rating_value] = updated.due.isoformat()
+
+        return JsonResponse({"previews": previews})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+
+@login_required
 @require_http_methods(["POST"])
 def api_review_card(request, card_id):
     """Record a review rating and update the card's FSRS schedule"""
