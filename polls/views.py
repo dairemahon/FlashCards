@@ -1,4 +1,8 @@
 import json
+import os       # lets you read environment variables with os.environ.get()
+import io       # lets you treat a bytes object as if it were a file on disk
+import base64   # converts binary data (images) into text so it can be sent in JSON
+from openai import OpenAI  # the OpenAI client class
 
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login, logout
@@ -187,6 +191,103 @@ def api_create_card(request, deck_id):
         except Exception as e:
                 return JsonResponse({"error": str(e)}, status=400)
 
+@login_required
+@require_http_methods(["POST"])
+def api_generate_cards(request, deck_id):
+        print("=== GENERATE CARDS VIEW CALLED ===")
+        print("FILES:", dict(request.FILES))
+        print("POST:", dict(request.POST))
+        print("CONTENT TYPE:", request.content_type)
+        try:
+            deck = get_object_or_404(Deck, id=deck_id, owner=request.user)
+
+            num_cards = int(request.POST.get("num_cards", 10))
+            max_front = int(request.POST.get("max_front_words", 10))
+            max_back = int(request.POST.get("max_back_words", 50))
+            uploaded_file = request.FILES.get("file")
+
+            if not uploaded_file:
+                  print("DEBUG FILES:", request.FILES)
+                  print("DEBUG POST:", request.POST)
+                  print("DEBUG CONTENT TYPE:", request.content_type)
+                  return JsonResponse({"error": "No file uploaded"}, status=400)
+            
+            filename = uploaded_file.name.lower()
+            client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+            if filename.endswith(".txt"):
+                content  = uploaded_file.read().decode("utf-8")
+                response = _call_text_model(client, content, num_cards, max_front, max_back)
+
+            elif filename.endswith(".pdf"):
+                import pdfplumber
+                with pdfplumber.open(io.BytesIO(uploaded_file.read())) as pdf:
+                    content = "\n".join(page.extract_text() or "" for page in pdf.pages)
+                if not content.strip():
+                    return JsonResponse({"error": "Could not extract text from PDF"}, status=400)
+                response = _call_text_model(client, content, num_cards, max_front, max_back)
+    
+            elif filename.endswith((".jpg", ".jpeg", ".png", ".webp")):
+                mime     = "image/jpeg" if filename.endswith((".jpg", ".jpeg")) else f"image/{filename.split('.')[-1]}"
+                img_b64  = base64.b64encode(uploaded_file.read()).decode("utf-8")
+                response = _call_vision_model(client, img_b64, mime, num_cards, max_front, max_back)
+    
+            else:
+                return JsonResponse({"error": "Unsupported file type. Use .txt, .pdf, .jpg, .png, or .webp"}, status=400)
+
+            cards = json.loads(response)
+            return JsonResponse({"cards": cards})
+        
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "AI returned invalid data. Try again."}, status=500)
+        except Exception as e:
+            import traceback
+            print("EXCEPTION TRACEBACK:")
+            traceback.print_exc()
+            return JsonResponse({"error": str(e)}, status=400)
+def _call_text_model(client, content, num_cards, max_front, max_back):
+    """Send text content to GPT and return raw JSON string"""
+    prompt = f"""You are a flashcard creator. Create exactly {num_cards} flashcards from the content below.
+
+Rules:
+- front: a question or key term, maximum {max_front} words
+- back: the answer or definition, maximum {max_back} words
+- Return ONLY a valid JSON array — no explanation, no markdown, no code fences
+
+Format: [{{"front": "...", "back": "..."}}, ...]
+
+Content:
+{content[:8000]}"""
+
+    result = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+    return result.choices[0].message.content
+
+
+def _call_vision_model(client, img_b64, mime, num_cards, max_front, max_back):
+    """Send an image to GPT-4o vision and return raw JSON string"""
+    result = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"Create exactly {num_cards} flashcards from this image. Front: max {max_front} words. Back: max {max_back} words. Return ONLY a JSON array: [{{'front': '...', 'back': '...'}}]"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime};base64,{img_b64}"}
+                }
+            ]
+        }],
+    )
+    return result.choices[0].message.content
+
+        
 
 @login_required
 @require_http_methods(["PUT", "DELETE"])

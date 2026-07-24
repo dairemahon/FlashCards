@@ -228,6 +228,36 @@ export async function createCard(deckId, frontText, backText) {
 }
 
 
+export async function generateCards(deckId, file, numCards, maxFrontWords, maxBackWords) {
+    const csrfData = await getCsrfToken();
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("num_cards", numCards);
+    formData.append("max_front_words", maxFrontWords);
+    formData.append("max_back_words", maxBackWords);
+
+    const response = await fetch(`${API_BASE}/decks/${deckId}/generate-cards/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "X-CSRFToken": csrfData.csrfToken || "",
+        },
+        body: formData,
+    });
+
+    const text = await response.text();
+    let data = {};
+    if (text) {
+        try { data = JSON.parse(text); }
+        catch { data = { error: text }; }
+    }
+
+    if (!response.ok) throw new Error(data.error || "Failed to generate cards");
+    return data;
+}
+
+
 export async function updateCard(cardId, frontText, backText) {
     const csrfData = await getCsrfToken();
     

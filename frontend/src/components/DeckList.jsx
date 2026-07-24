@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDecks, deleteDeck} from "../api";
+import { getDecks, deleteDeck, createDeck} from "../api";
 
 export default function DeckList({ setIsLoggedIn }) {
   const [decks, setDecks] = useState([]);
@@ -9,6 +9,12 @@ export default function DeckList({ setIsLoggedIn }) {
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newTitle, setNewTitle]               = useState("");
+  const [newDescription, setNewDescription]   = useState("");
+  const [createError, setCreateError]         = useState("");
+  const [creating, setCreating]               = useState(false);
 
   useEffect(() => {
     getDecks()
@@ -51,6 +57,30 @@ export default function DeckList({ setIsLoggedIn }) {
         setError(err.message);
     }
 };
+
+  const openCreateModal = () => {
+    setNewTitle("");
+    setNewDescription("");
+    setCreateError("");
+    setShowCreateModal(true);
+};
+
+  const handleCreateDeck = async () => {
+      if (!newTitle.trim()) {
+          setCreateError("Title is required.");
+          return;
+      }
+      setCreating(true);
+      try {
+          const deck = await createDeck(newTitle, newDescription);
+          navigate(`/decks/${deck.id}/edit`);
+      } catch (err) {
+          setCreateError(err.message);
+          setCreating(false);
+      }
+};
+
+
 
   return (
   <div className="min-h-screen bg-white">
@@ -113,16 +143,59 @@ export default function DeckList({ setIsLoggedIn }) {
 
           {/* New Deck card — styled to match the other cards */}
           <div
-            onClick={() => navigate("/decks/create")}
-            className="bg-white rounded-sm shadow-sm p-8 cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-indigo-300 min-h-60 flex flex-col items-center justify-center text-indigo-400 hover:text-indigo-600 hover:border-indigo-500 transition-colors"
+              onClick={openCreateModal}
+              className="bg-white rounded-sm shadow-sm p-8 cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-indigo-300 min-h-60 flex flex-col items-center justify-center text-indigo-400 hover:text-indigo-600 hover:border-indigo-500 transition-colors"
           >
-            <span className="text-5xl font-light mb-3">+</span>
-            <span className="text-sm font-medium">New Deck</span>
+              <span className="text-5xl font-light mb-3">+</span>
+              <span className="text-sm font-medium">New Deck</span>
           </div>
-
         </div>
       )}
     </main>
+    {showCreateModal && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-sm p-8 max-w-lg w-full mx-4 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">New Deck</h2>
+            {createError && (
+                <p className="text-red-500 text-sm mb-4">{createError}</p>
+            )}
+            <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                    type="text"
+                    value={newTitle}
+                    onChange={e => setNewTitle(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    autoFocus
+                />
+            </div>
+            <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                    value={newDescription}
+                    onChange={e => setNewDescription(e.target.value)}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+            </div>
+            <div className="flex gap-3">
+                <button
+                    onClick={handleCreateDeck}
+                    disabled={creating}
+                    className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                    {creating ? "Creating..." : "Create Deck"}
+                </button>
+                <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="text-gray-500 px-5 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+    )}
   </div>
 );
 }

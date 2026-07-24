@@ -257,28 +257,38 @@ function formatDue(isoString) {
       <main className="max-w-5xl mx-auto px-6 py-10">
 
         {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">{deck.title}</h1>
-            {deck.description && (
-              <p className="text-gray-700 mt-1">{deck.description}</p>
-            )}
-            <p className="text-sm text-gray-400 mt-1">
-              Created: {new Date(deck.created_at).toLocaleDateString()}
-            </p>
-            <button
-            className="text-gray-500  hover:text-red-600 transition-colors text-sm font-medium"
-            onClick={handleDeleteDeck}
-            >
-              Delete Deck
-            </button>
-          </div>
-          <button
-            className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-            onClick={() => navigate(`/decks/${id}/edit`)}
-          >
-            Edit Deck
-          </button>
+        <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">{deck.title}</h1>
+            <div className="flex justify-between items-start">
+                <div>
+                    {deck.description && (
+                        <p className="text-gray-700">{deck.description}</p>
+                    )}
+                    <p className="text-sm text-gray-400 mt-1 py-1">
+                        Created: {new Date(deck.created_at).toLocaleDateString()}
+                    </p>
+                    <a href="/decks" className="text-sm text-gray-400 hover:text-indigo-600 transition-colors">
+                      ← Back to decks
+                    </a>
+                </div>
+                
+                  
+                
+                <div className="flex flex-col items-end gap-2 py-1">
+                    <button
+                        className="text-gray-500 hover:text-indigo-400 transition-colors text-sm font-medium"
+                        onClick={() => navigate(`/decks/${id}/edit`)}
+                    >
+                        Edit Deck
+                    </button>
+                    <button
+                        className="text-gray-500 hover:text-red-400 transition-colors text-sm font-medium"
+                        onClick={handleDeleteDeck}
+                    >
+                        Delete Deck
+                    </button>
+                </div>
+            </div>
         </div>
 
         {cards.length === 0 ? (
@@ -306,15 +316,12 @@ function formatDue(isoString) {
                     onClick={() => setShowBack(prev => !prev)}
                     className="bg-white rounded-sm shadow-md border border-gray-100 cursor-pointer flex flex-col items-center justify-center min-h-96 p-12 mb-6 hover:shadow-lg transition-shadow"
                 >
-                    <p className="text-xs uppercase tracking-widest text-gray-400 mb-6">
-                        {showBack ? "Back" : "Front"} — click to flip
-                    </p>
                     <h2 className="text-3xl font-semibold text-gray-800 text-center">
                         {showBack ? dueCards[questionIndex].back_text : dueCards[questionIndex].front_text}
                     </h2>
                     <button
                         onClick={(e) => { e.stopPropagation(); openEditModal(dueCards[questionIndex]); }}
-                        className="mt-10 text-sm text-indigo-500 hover:text-indigo-700 transition-colors"
+                        className="mt-10 text-sm text-indigo-400 hover:text-indigo-500 transition-colors"
                     >
                         Edit this card
                     </button>
@@ -325,7 +332,7 @@ function formatDue(isoString) {
                     {questionIndex > 0 ? (
                         <button
                             onClick={() => { setQuestionIndex(prev => prev - 1); setShowBack(false); }}
-                            className="px-6 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                            className="px-4 py-1 text-gray-600 text-sm hover:text-indigo-400 transition-colors w-30"
                         >
                             ← Previous
                         </button>
@@ -336,7 +343,7 @@ function formatDue(isoString) {
                     {questionIndex < maxIndex ? (
                         <button
                             onClick={() => { setQuestionIndex(prev => prev + 1); setShowBack(false); }}
-                            className="px-6 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                            className="px-4 py-1 text-gray-600 text-sm hover:text-indigo-400 transition-colors w-28"
                         >
                             Next →
                         </button>
@@ -349,19 +356,19 @@ function formatDue(isoString) {
                 {showBack && (
                     <div className="flex justify-center gap-3">
                       <div className="flex flex-col items-center">
-                          <button onClick={() => handleRate(1)} className="px-5 py-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 text-sm font-medium transition-colors">Again</button>
+                          <button onClick={() => handleRate(1)} className="px-4 py-1  text-gray-500 hover:text-black hover:underline text-sm font-medium transition-colors">Again</button>
                           <span className="text-xs text-gray-400 mt-1">{previews[1] ?? ""}</span>
                       </div>
                       <div className="flex flex-col items-center">
-                          <button onClick={() => handleRate(2)} className="px-5 py-2 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-200 text-sm font-medium transition-colors">Hard</button>
+                          <button onClick={() => handleRate(2)} className="px-4 py-1  text-gray-500 hover:text-black hover:underline text-sm font-medium transition-colors">Hard</button>
                           <span className="text-xs text-gray-400 mt-1">{previews[2] ?? ""}</span>
                       </div>
                       <div className="flex flex-col items-center">
-                          <button onClick={() => handleRate(3)} className="px-5 py-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 text-sm font-medium transition-colors">Good</button>
+                          <button onClick={() => handleRate(3)} className="px-4 py-1  text-gray-500  hover:text-black hover:underline text-sm font-medium transition-colors">Good</button>
                           <span className="text-xs text-gray-400 mt-1">{previews[3] ?? ""}</span>
                       </div>
                       <div className="flex flex-col items-center">
-                          <button onClick={() => handleRate(4)} className="px-5 py-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-medium transition-colors">Easy</button>
+                          <button onClick={() => handleRate(4)} className="px-4 py-1  text-gray-500  hover:text-black hover:underline text-sm font-medium transition-colors">Easy</button>
                           <span className="text-xs text-gray-400 mt-1">{previews[4] ?? ""}</span>
                       </div>
                   </div>
@@ -369,12 +376,7 @@ function formatDue(isoString) {
             </>
         )}
 
-        {/* Back link */}
-        <div className="mt-10">
-          <a href="/decks" className="text-sm text-gray-400 hover:text-indigo-600 transition-colors">
-            ← Back to decks
-          </a>
-        </div>
+        
       </main>
 
       {/* Edit Card Modal */}
