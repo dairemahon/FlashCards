@@ -21,7 +21,7 @@ export default function Navbar({ isLoggedIn, setIsLoggedIn }) {
         onClick={() => navigate(isLoggedIn ? "/decks" : "/login")}
         className="text-4xl font-serif font-medium tracking-wider text-black-600 px-10 cursor-pointer"
       >
-        Rulo
+        Rolo'
       </h1>
 
       <div className="flex gap-3 px-10">

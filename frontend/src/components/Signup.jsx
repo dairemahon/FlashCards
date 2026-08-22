@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signup } from "../api";
 
-export default function Signup({setIsLoggedIn}) {
+export default function Signup({ setIsLoggedIn }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,60 +34,90 @@ export default function Signup({setIsLoggedIn}) {
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "50px auto", padding: "20px" }}>
-      <h1>Sign Up</h1>
-      {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "10px" }}>
-          <label>Username:</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            style={{ width: "100%", padding: "5px" }}
-          />
+    <div className="max-h-screen bg-white flex flex-col items-center justify-center px-4 py-30">
+      <div className="w-full max-w-sm">
+        <h1 className="text-4xl font-serif font-medium tracking-wider text-center mb-8">
+          Rolo'
+        </h1>
+
+        <div className="bg-white border border-gray-100 rounded-sm shadow-sm p-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">Create an account</h2>
+
+          {error && (
+            <p className="text-red-500 text-sm mb-4">{error}</p>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoFocus
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={password2}
+                onChange={(e) => setPassword2(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-medium py-2 rounded-lg transition-colors text-sm cursor-pointer"
+            >
+              {loading ? "Creating account..." : "Create account"}
+            </button>
+          </form>
         </div>
-        <div style={{ marginBottom: "10px" }}>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ width: "100%", padding: "5px" }}
-          />
-        </div>
-        <div style={{ marginBottom: "10px" }}>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: "5px" }}
-          />
-        </div>
-        <div style={{ marginBottom: "10px" }}>
-          <label>Confirm Password:</label>
-          <input
-            type="password"
-            value={password2}
-            onChange={(e) => setPassword2(e.target.value)}
-            required
-            style={{ width: "100%", padding: "5px" }}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: "100%", padding: "8px", cursor: "pointer" }}
-        >
-          {loading ? "Signing up..." : "Sign Up"}
-        </button>
-      </form>
-      <p>
-        Already have an account? <Link to="/login">Login here</Link>
-      </p>
+
+        <p className="text-center text-sm text-gray-500 mt-4">
+          Already have an account?{" "}
+          <Link to="/login" className="text-indigo-500 hover:text-indigo-600">
+            Log in
+          </Link>
+        </p>
+
+      </div>
     </div>
   );
 }
