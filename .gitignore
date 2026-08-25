@@ -1,0 +1,16 @@
+# Environment variables — never commit secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Django
+db.sqlite3
+staticfiles/
+
+# macOS
+.DS_Store

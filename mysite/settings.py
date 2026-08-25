@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +20,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-93=y&%6h&g1=+g)4k_m2g*vwz(^8@y%=_o9dkht8_r_2iaoqw0'
+# os.environ.get reads the variable from the environment.
+# The second argument is a fallback used only for local dev without Docker.
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-...')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Environment variables are always strings, so compare to the string 'True'.
+# Second arguement is a fallback for local dev without Docker.
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+
+
+# Split a comma-separated string into a list Django expects.
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+
 
 
 # Application definition
@@ -76,11 +85,13 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'flashcards',
-        'USER': 'your_pg_user',
-        'PASSWORD': 'yourpassword',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'NAME': os.environ.get('POSTGRES_DB', 'flashcards'),
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        # In Docker this will be 'db' (the service name).
+        # Locally it stays '127.0.0.1' so your dev setup still works.
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -120,6 +131,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Tells collectstatic where to put the gathered files.
+# The Dockerfile runs collectstatic, so this folder needs to be defined.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
