@@ -21,11 +21,12 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copies the Nginx configuration file into the image, replacing the default one
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+
 
 # Nginx listens on port 80
 EXPOSE 80
 # daemon off; tells Nginx to run in the foreground, otherwise\
 # Docker thinks the container has finished and stops it.
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/bin/sh", "-c", "export PORT=${PORT:-80} && envsubst '$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
 
