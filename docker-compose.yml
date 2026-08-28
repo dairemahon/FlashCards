@@ -1,81 +1,43 @@
 services:
 
-  # Use official Postgres 16 image
-  # If Postgres crashes it restarts automatically unless stopped. 
-  # If manually stopped it will stay stopped.
   db:
     image: postgres:16-alpine
     restart: unless-stopped
-
-
-    # Read by Postgres image on first startup to create the database
-    # ${VAR:-default} means use value from .env else fall back to default
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-flashcards}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    
-    
-    # Mount a volume at the path where Postgres stores its data files.
-    # Otherwise all the data is deleted everytime the container stops.
-    # named volume persists independently of the container
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-    
-    # Repeatedly checks if Postgres is actually accepting connections.
-    # Docker uses this to know when Postgres is ready to accept connections.
     healthcheck:
-      test: ["CMD-shell", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    
 
-    backend:
-    # Build from the Dockerfile in the project root
-      build:
-        context: .
-        dockerfile: Dockerfile
-
-        # Read all variables from .env file and pass them to the container.
-        # This is how Django gets SECRET_KEY and database credentials, OPEN_API_KEy, etc.
-        restart: unless-stopped
-        env_file: .env
-
-        # Only start Django when Postgres passes healthcheck.
-        depends_on:
-          db:
-            condition: service_healthy
-        
-        # Override the Dockerfile's CMD. Run migrations first 
-        # (creates/updates database tables), then start Gunicorn. 
-        # The > is YAML syntax for a multi-line string. 
-        # This means every time the container starts it automatically applies any new migrations.
-
-
-        command: >
-          sh -c "python manage.py migrate &&
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
              gunicorn mysite.wsgi:application --bind 0.0.0.0:8000 --workers 3"
-    
-    frontend:
-      build:
-        # build from frontend/Dockerfile
-        context: ./frontend
-        dockerfile: Dockerfile
 
-        restart: unless-stopped
-        
-        # maps port 80 on the host to port 80 in the container
-        # this is the only service that needs a port mapping because it's the 
-        # only one the browser talks to directly. 
-        # Backend and db communicate over Docker's internal network only.
-        ports:
-          - "80:80"
-        depends_on:
-           - backend
-        
-        # Declares the named volume so Docker creates and manages it. 
-        # Without declaring it here the volume mount above would fail.
-        volumes:
-          postgres_data:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

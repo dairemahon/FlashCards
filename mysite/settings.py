@@ -86,9 +86,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('POSTGRES_DB', 'flashcards'),
-        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        'USER': os.environ.get('POSTGRES_USER', 'dairemahon'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'HOST': os.environ.get('DB_HOST', ''),
         # In Docker this will be 'db' (the service name).
         # Locally it stays '127.0.0.1' so your dev setup still works.
         'PORT': os.environ.get('DB_PORT', '5432'),

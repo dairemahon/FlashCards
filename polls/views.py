@@ -213,7 +213,7 @@ def api_generate_cards(request, deck_id):
                   return JsonResponse({"error": "No file uploaded"}, status=400)
             
             filename = uploaded_file.name.lower()
-            client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+            client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "").strip())
 
             if filename.endswith(".txt"):
                 content  = uploaded_file.read().decode("utf-8")
@@ -253,7 +253,7 @@ Rules:
 - front: a question or key term, maximum {max_front} words
 - back: the answer or definition, maximum {max_back} words
 - Return ONLY a valid JSON array — no explanation, no markdown, no code fences
-
+- Fact check your answers and make sure they are accurate and relevant to the content provided.
 Format: [{{"front": "...", "back": "..."}}, ...]
 
 Content:

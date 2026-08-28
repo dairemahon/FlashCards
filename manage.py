@@ -3,6 +3,8 @@
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv(override=False)
 
 def main():
     """Run administrative tasks."""

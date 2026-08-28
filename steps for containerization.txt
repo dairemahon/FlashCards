@@ -1,0 +1,235 @@
+================================================================
+CONTAINERIZING THE APP WITH DOCKER — FILE REFERENCE
+================================================================
+
+
+----------------------------------------------------------------
+FILES ADDED
+----------------------------------------------------------------
+
+1. Dockerfile  (project root, next to manage.py)
+----------------------------------------------------------------
+Purpose:
+  Recipe for building the Django backend Docker image.
+
+What it does:
+  - Starts from an official Python 3.12 Linux image
+  - Installs system libraries needed to compile the Postgres driver
+  - Copies requirements.txt and installs all Python packages
+  - Copies the Django project files
+  - Runs collectstatic to bundle Django admin CSS/JS
+  - Starts the app using Gunicorn (production web server)
+
+Why we need it:
+  Docker needs explicit instructions to build an image for each
+  service. Without this file Docker does not know what OS to use,
+  what packages to install, or how to start Django.
+
+
+2. frontend/Dockerfile  (inside the frontend/ folder)
+----------------------------------------------------------------
+Purpose:
+  Recipe for building the React frontend Docker image.
+
+What it does:
+  Uses two stages:
+  Stage 1 (build) — starts from Node 20, installs npm packages,
+    runs "npm run build" to compile React into static HTML/CSS/JS
+  Stage 2 (serve) — starts from a fresh Nginx image, copies only
+    the compiled files from Stage 1, discards Node entirely
+
+Why we need it:
+  The Vite dev server (npm run dev) only runs during development.
+  In Docker we need a production-ready way to serve the React app.
+  Nginx serves the compiled files and is fast, lightweight and
+  secure. The two-stage build keeps the final image small by
+  throwing away Node and node_modules after the build is done.
+
+
+3. frontend/nginx.conf  (inside the frontend/ folder)
+----------------------------------------------------------------
+Purpose:
+  Configuration file telling Nginx how to handle incoming requests.
+
+What it does:
+  - Serves the built React files for all normal page requests
+  - Falls back to index.html for any URL that doesn't exist as a
+    file on disk — this makes React Router work correctly
+  - Forwards any request to /api/ to the Django backend container
+  - Forwards any request to /admin/ to the Django backend container
+
+Why we need it:
+  Nginx needs to know two things: where the React files are, and
+  where to send API requests. Without the /api/ proxy rule, the
+  browser would get a 404 for every API call because Nginx does
+  not know about Django. This file replaces the proxy setting in
+  vite.config.js, which only works during local development.
+
+
+4. docker-compose.yml  (project root)
+----------------------------------------------------------------
+Purpose:
+  Orchestrates all three containers (db, backend, frontend) so
+  they start together, talk to each other, and shut down together.
+
+What it does:
+  - Defines three services: db (Postgres), backend (Django),
+    frontend (Nginx + React)
+  - Tells each service which Dockerfile to build from
+  - Sets up a healthcheck so Django waits until Postgres is
+    genuinely ready before starting
+  - Runs database migrations automatically on every startup
+  - Maps port 80 on your machine to the frontend container
+  - Creates a named volume so database data persists when
+    containers are stopped and restarted
+
+Why we need it:
+  Without it you would have to manually build and start each
+  container, manually create a network between them, and manually
+  manage the startup order. docker-compose.yml reduces all of that
+  to a single command: docker compose up --build
+
+
+5. .dockerignore  (project root)
+----------------------------------------------------------------
+Purpose:
+  Tells Docker which files to skip when copying your project into
+  an image, the same way .gitignore works for git.
+
+What it does:
+  Excludes: __pycache__, .pyc files, .env, db.sqlite3, .git,
+  frontend/node_modules, frontend/dist, staticfiles
+
+Why we need it:
+  Without it, Docker copies everything including node_modules
+  (hundreds of MB), your .env secrets file, and your git history.
+  This makes images unnecessarily large and risks leaking secrets
+  into the image if it is ever shared or published.
+
+
+6. .gitignore  (project root)
+----------------------------------------------------------------
+Purpose:
+  Tells git which files to never commit to version control.
+
+What it does:
+  Excludes: .env, __pycache__, .pyc files, .venv, db.sqlite3,
+  staticfiles, .DS_Store
+
+Why we need it:
+  Previously there was only a .gitignore inside frontend/ created
+  by Vite. There was no root-level .gitignore covering the Django
+  side of the project. Adding one at the root ensures the .env
+  file (which contains secrets) can never accidentally be committed
+  and pushed to GitHub.
+
+
+7. .env  (project root)
+----------------------------------------------------------------
+Purpose:
+  Stores secret and environment-specific configuration values that
+  must not be hardcoded in source code or committed to git.
+
+What it does:
+  Provides values for: SECRET_KEY, DEBUG, ALLOWED_HOSTS,
+  POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, DB_HOST,
+  DB_PORT, OPENAI_API_KEY
+
+Why we need it:
+  settings.py is committed to git and therefore public. Putting
+  secrets directly in settings.py means anyone with access to the
+  repo can see them. The .env file lives only on your machine,
+  is listed in .gitignore, and is injected into the containers at
+  runtime by docker-compose. This is the standard way to handle
+  secrets in any real application.
+
+
+8. requirements.txt  (project root)
+----------------------------------------------------------------
+Purpose:
+  Lists every Python package the Django backend needs.
+
+What it does:
+  Specifies: django, psycopg2-binary, gunicorn, openai, fsrs
+
+Why we need it:
+  The backend Dockerfile runs "pip install -r requirements.txt"
+  to install packages inside the container. Without this file
+  Docker does not know what to install. Note that gunicorn was
+  added here — it is the production web server that replaces
+  Django's built-in runserver, which is not safe for production.
+
+
+----------------------------------------------------------------
+FILES EDITED
+----------------------------------------------------------------
+
+1. mysite/settings.py
+----------------------------------------------------------------
+What was changed:
+  Three sections were updated to read from environment variables
+  instead of having values hardcoded directly in the file.
+
+  a) SECRET_KEY
+     Before: SECRET_KEY = 'django-insecure-...'
+     After:  SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-...')
+     Reason: The hardcoded key was already committed to git and
+             therefore public on GitHub. Reading from an env var
+             means the real production key stays in .env and is
+             never committed.
+
+  b) DEBUG
+     Before: DEBUG = True
+     After:  DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+     Reason: DEBUG must be False in production — it exposes source
+             code, stack traces, and settings to anyone who triggers
+             an error. Reading from an env var lets it be True
+             locally and False in Docker without changing the file.
+
+  c) ALLOWED_HOSTS
+     Before: ALLOWED_HOSTS = []
+     After:  ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+     Reason: Django requires ALLOWED_HOSTS to be set when DEBUG is
+             False. An empty list would reject all requests in
+             production.
+
+  d) DATABASE HOST
+     Before: 'HOST': '127.0.0.1'
+     After:  'HOST': os.environ.get('DB_HOST', '127.0.0.1')
+     Reason: Inside Docker, 127.0.0.1 refers to the container
+             itself, not the Postgres container. The .env file sets
+             DB_HOST=db (the docker-compose service name) so Django
+             connects to the right place. The fallback of 127.0.0.1
+             keeps local development working without Docker.
+
+  e) STATIC_ROOT added
+     Added: STATIC_ROOT = BASE_DIR / 'staticfiles'
+     Reason: The Dockerfile runs "python manage.py collectstatic"
+             to gather Django admin CSS/JS into one folder.
+             STATIC_ROOT tells Django where to put those files.
+             Without it collectstatic raises an error.
+
+
+----------------------------------------------------------------
+RUNNING THE APP WITH DOCKER
+----------------------------------------------------------------
+
+  First time setup:
+    cp .env.example .env     (then fill in real values)
+
+  Build and start everything:
+    docker compose up --build
+
+  App is available at:
+    http://localhost
+
+  Create a Django superuser:
+    docker compose exec backend python manage.py createsuperuser
+
+  Stop containers:
+    docker compose down
+
+  Stop containers and delete the database:
+    docker compose down -v
+
+================================================================

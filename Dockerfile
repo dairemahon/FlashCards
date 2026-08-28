@@ -24,10 +24,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copies rest of the code into the image
 COPY . .
 
-# Collects static files into the STATIC_ROOT directory, which is then served by Nginx
-# --noinput means don't prompt for confirmation
-RUN python manage.py collectstatic --noinput
-
 # Documents this container listens on port 8000
 EXPOSE 8000
 
