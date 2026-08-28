@@ -152,6 +152,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://localhost:5175",
     "http://127.0.0.1:5175",
-    "https://romantic-heart-production-78e6.up.railway.app/login"
-
+    "https://romantic-heart-production-78e6.up.railway.app",
+    "https://flashcards-production-813a.up.railway.app",
 ]
